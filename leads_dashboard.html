@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chuck's Leads Dashboard — Legacy Financial</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0f1f35;
+    --navy-mid: #1a2f4a;
+    --navy-light: #243c5a;
+    --accent: #2dd4a0;
+    --amber: #f5a623;
+    --text: #e8edf3;
+    --text-muted: #7a93ae;
+    --text-dim: #4a6278;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.14);
+    --card-bg: rgba(26,47,74,0.6);
+    --hot-bg: rgba(45,212,160,0.1);
+    --hot-border: rgba(45,212,160,0.3);
+    --warm-bg: rgba(245,166,35,0.1);
+    --warm-border: rgba(245,166,35,0.3);
+    --cold-bg: rgba(74,98,120,0.2);
+    --cold-border: rgba(74,98,120,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--navy); color: var(--text); min-height: 100vh; }
+  .header {
+    background: var(--navy-mid); border-bottom: 1px solid var(--border);
+    padding: 20px 32px; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo-mark { width: 38px; height: 38px; border-radius: 10px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; color: var(--navy); }
+  .header-title { font-size: 16px; font-weight: 600; }
+  .header-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+  .last-updated { font-size: 12px; color: var(--text-dim); font-family: 'DM Mono', monospace; }
+  .stats-bar { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
+  .stat-cell { background: var(--navy-mid); padding: 18px 28px; text-align: center; }
+  .stat-num { font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 4px; }
+  .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat-num.green { color: var(--accent); }
+  .stat-num.amber { color: var(--amber); }
+  .controls { padding: 20px 32px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+  .search-wrap { position: relative; flex: 1; min-width: 240px; max-width: 380px; }
+  .search-wrap input { width: 100%; padding: 9px 12px 9px 36px; background: var(--navy-mid); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; font-family: 'DM Sans', sans-serif; outline: none; transition: border 0.2s; }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-wrap input::placeholder { color: var(--text-dim); }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.4; }
+  .filters { display: flex; gap: 6px; }
+  .filter-btn { padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+  .filter-btn:hover { border-color: var(--border-hover); color: var(--text); }
+  .filter-btn.active { background: var(--navy-light); color: var(--text); border-color: var(--border-hover); }
+  .filter-btn.fhot.active { background: var(--hot-bg); color: var(--accent); border-color: var(--hot-border); }
+  .filter-btn.fwarm.active { background: var(--warm-bg); color: var(--amber); border-color: var(--warm-border); }
+  .refresh-btn { padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 6px; margin-left: auto; }
+  .refresh-btn:hover { color: var(--accent); border-color: var(--hot-border); }
+  .table-head { display: grid; grid-template-columns: 2fr 1.3fr 1.6fr; gap: 16px; padding: 10px 32px; border-bottom: 1px solid var(--border); }
+  .th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); font-weight: 500; }
+  .leads-list { padding: 16px 32px; display: flex; flex-direction: column; gap: 8px; }
+  .lead-row { display: grid; grid-template-columns: 2fr 1.3fr 1.6fr; gap: 16px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; transition: border-color 0.15s; animation: fadeIn 0.3s ease both; }
+  .lead-row:hover { border-color: var(--border-hover); }
+  .lead-row.hot { border-left: 3px solid var(--accent); }
+  .lead-row.warm { border-left: 3px solid var(--amber); }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+  .col-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 5px; }
+  .lead-name-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+  .lead-name { font-size: 14px; font-weight: 600; }
+  .lead-detail { font-size: 12px; color: var(--text-muted); line-height: 1.7; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; margin-bottom: 5px; }
+  .badge.hot { background: var(--hot-bg); color: var(--accent); border: 1px solid var(--hot-border); }
+  .badge.warm { background: var(--warm-bg); color: var(--amber); border: 1px solid var(--warm-border); }
+  .badge.cold { background: var(--cold-bg); color: var(--text-muted); border: 1px solid var(--cold-border); }
+  .response-text { font-size: 13px; color: var(--text); line-height: 1.6; }
+  .policy-key { font-size: 11px; color: var(--text-dim); margin-bottom: 2px; margin-top: 8px; }
+  .policy-val { font-size: 13px; color: var(--text); }
+  .flags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+  .flag { font-size: 10px; padding: 1px 6px; border-radius: 4px; background: rgba(224,85,85,0.15); color: #e07070; border: 1px solid rgba(224,85,85,0.25); }
+  .loading { text-align: center; padding: 60px; color: var(--text-muted); font-size: 14px; }
+  .spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-box { margin: 32px; padding: 20px 24px; background: rgba(224,85,85,0.1); border: 1px solid rgba(224,85,85,0.3); border-radius: 12px; font-size: 13px; line-height: 1.7; color: #e07070; }
+  .error-box strong { display: block; margin-bottom: 8px; font-size: 15px; }
+  .empty-state { text-align: center; padding: 60px 32px; color: var(--text-dim); font-size: 14px; }
+  @media(max-width:700px) {
+    .header { padding: 14px 16px; }
+    .stats-bar { grid-template-columns: repeat(2,1fr); }
+    .controls { padding: 14px 16px; }
+    .table-head { display: none; }
+    .leads-list { padding: 12px 16px; }
+    .lead-row { grid-template-columns: 1fr; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo-mark">LF</div>
+    <div>
+      <div class="header-title">Chuck's Leads Dashboard</div>
+      <div class="header-sub">Legacy Financial — Beneficiary Leads</div>
+    </div>
+  </div>
+  <div class="last-updated" id="last-updated">Loading...</div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-cell"><div class="stat-num" id="s-total">—</div><div class="stat-label">Total leads</div></div>
+  <div class="stat-cell"><div class="stat-num green" id="s-hot">—</div><div class="stat-label">Hot leads</div></div>
+  <div class="stat-cell"><div class="stat-num amber" id="s-warm">—</div><div class="stat-label">Warm leads</div></div>
+  <div class="stat-cell"><div class="stat-num" id="s-states">—</div><div class="stat-label">States</div></div>
+</div>
+
+<div class="controls">
+  <div class="search-wrap">
+    <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="search" placeholder="Search name, state, city, beneficiary..." oninput="renderLeads()" />
+  </div>
+  <div class="filters">
+    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn fhot" onclick="setFilter('hot',this)">🔥 Hot</button>
+    <button class="filter-btn fwarm" onclick="setFilter('warm',this)">⏳ Warm</button>
+    <button class="filter-btn" onclick="setFilter('cold',this)">Cold</button>
+  </div>
+  <button class="refresh-btn" onclick="loadLeads()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+    Refresh
+  </button>
+</div>
+
+<div class="table-head">
+  <div class="th">Contact info</div>
+  <div class="th">Response</div>
+  <div class="th">Policy details</div>
+</div>
+
+<div id="leads-container">
+  <div class="loading"><div class="spinner"></div>Loading your leads...</div>
+</div>
+
+<script>
+const SHEET_ID = '1bQXkHKq5mZ8NhfVocc8DEY7Hx_DgeAJHbjN5hCEzkak';
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&sheet=Sheet1`;
+
+let allLeads = [];
+let currentFilter = 'all';
+
+function parseCSV(text) {
+  const lines = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === ',' && !inQ) { lines[lines.length-1].push(cur.trim()); cur = ''; continue; }
+    else if ((ch === '\n' || ch === '\r') && !inQ) {
+      if (cur.trim() || lines.length) {
+        if (!lines.length || lines[lines.length-1].length) lines.push([]);
+        lines[lines.length-1].push(cur.trim());
+        cur = '';
+      }
+      continue;
+    } else { cur += ch; }
+  }
+  if (cur) { if (!lines.length) lines.push([]); lines[lines.length-1].push(cur.trim()); }
+  return lines.filter(r => r.some(c => c));
+}
+
+function classifyHeat(response) {
+  if (!response) return 'cold';
+  const r = response.toLowerCase();
+  const hot = ['yes','send','ok','sure','fine','please','sounds good','that will be','can send','would like'];
+  const cold = ["don't share","not interested","no ","scam","data mine","transparent","not until"];
+  const h = hot.filter(w => r.includes(w)).length;
+  const c = cold.filter(w => r.includes(w)).length;
+  if (h >= 1 && c === 0) return 'hot';
+  if (h >= 1 && c >= 1) return 'warm';
+  if (c >= 1) return 'warm';
+  if (r.length > 5) return 'warm';
+  return 'cold';
+}
+
+function avatarStyle(state) {
+  const m = {OH:'background:#1a4a6e;color:#5bb8f5',TX:'background:#1a4a2e;color:#5bf5a0',FL:'background:#4a3a1a;color:#f5c45b',AZ:'background:#4a1a2e;color:#f55b9a'};
+  return m[state] || 'background:#2a3a4a;color:#7a93ae';
+}
+
+async function loadLeads() {
+  document.getElementById('leads-container').innerHTML = '<div class="loading"><div class="spinner"></div>Loading your leads...</div>';
+  document.getElementById('last-updated').textContent = 'Refreshing...';
+  try {
+    const res = await fetch(CSV_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const rows = parseCSV(text);
+    if (rows.length < 2) throw new Error('No data rows found');
+    const headers = rows[0];
+    const idx = {};
+    headers.forEach((h,i) => idx[h.trim()] = i);
+
+    allLeads = rows.slice(1).filter(r => r[idx['First Name']]).map(r => ({
+      first: r[idx['First Name']] || '',
+      last:  r[idx['Last Name']] || '',
+      phone: r[idx['Phone #']] || '',
+      email: r[idx['Email']] || '',
+      dob:   r[idx['DOB']] || '',
+      city:  r[idx['City']] || '',
+      state: r[idx['State']] || '',
+      zip:   r[idx['ZIP']] || '',
+      creditRating: r[idx['CreditRating']] || '',
+      depression: r[idx['Depression']] || '',
+      highBP: r[idx['HighBloodPressure']] || '',
+      cancer: r[idx['Cancer']] || '',
+      response:    r[idx['Response']] || '',
+      beneficiary: r[idx['Beneficiary']] || '',
+      assistant:   r[idx['Ai Assistant Name']] || '',
+      type:        r[idx['Type']] || '',
+      heat: classifyHeat(r[idx['Response']] || '')
+    }));
+
+    renderLeads();
+    document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  } catch(e) {
+    document.getElementById('leads-container').innerHTML = `
+      <div class="error-box">
+        <strong>⚠️ Could not load leads (${e.message})</strong>
+        Make sure your Google Sheet sharing is set to <strong>"Anyone with the link — Viewer"</strong>, then click Refresh.<br><br>
+        In your sheet: Share → General access → Anyone with the link → Viewer → Done.
+      </div>`;
+    document.getElementById('last-updated').textContent = 'Error loading';
+  }
+}
+
+function getFiltered() {
+  const q = (document.getElementById('search').value||'').toLowerCase();
+  return allLeads.filter(l => {
+    const mf = currentFilter==='all' || l.heat===currentFilter;
+    const ms = !q || (l.first+' '+l.last).toLowerCase().includes(q) || l.state.toLowerCase().includes(q) || l.city.toLowerCase().includes(q) || l.beneficiary.toLowerCase().includes(q) || l.phone.includes(q);
+    return mf && ms;
+  });
+}
+
+function renderLeads() {
+  const leads = getFiltered();
+  document.getElementById('s-total').textContent = leads.length;
+  document.getElementById('s-hot').textContent = leads.filter(l=>l.heat==='hot').length;
+  document.getElementById('s-warm').textContent = leads.filter(l=>l.heat==='warm').length;
+  document.getElementById('s-states').textContent = new Set(leads.map(l=>l.state).filter(Boolean)).size;
+
+  if (!leads.length) {
+    document.getElementById('leads-container').innerHTML = '<div class="empty-state">No leads match your filter.</div>';
+    return;
+  }
+
+  const html = leads.map((l,i) => {
+    const flags = [l.depression==='Yes'&&'Depression', l.highBP==='Yes'&&'High BP', l.cancer==='Yes'&&'Cancer'].filter(Boolean);
+    const ini = ((l.first[0]||'')+(l.last[0]||'')).toUpperCase();
+    return `<div class="lead-row ${l.heat}" style="animation-delay:${i*0.04}s">
+      <div>
+        <div class="lead-name-row">
+          <div class="avatar" style="${avatarStyle(l.state)}">${ini}</div>
+          <div>
+            <div class="badge ${l.heat}">${l.heat==='hot'?'🔥 Hot':l.heat==='warm'?'⏳ Warm':'❄️ Cold'}</div>
+            <div class="lead-name">${l.first} ${l.last}</div>
+          </div>
+        </div>
+        <div class="lead-detail">📞 ${l.phone||'—'}</div>
+        <div class="lead-detail">✉️ ${l.email||'—'}</div>
+        <div class="lead-detail">🎂 ${l.dob||'—'}</div>
+        <div class="lead-detail">📍 ${l.city}, ${l.state} ${l.zip}</div>
+        ${flags.length?`<div class="flags">${flags.map(f=>`<span class="flag">${f}</span>`).join('')}</div>`:''}
+      </div>
+      <div>
+        <div class="col-label">Response</div>
+        <div class="response-text">${l.response||'—'}</div>
+      </div>
+      <div>
+        <div class="policy-key">Beneficiary</div>
+        <div class="policy-val">${l.beneficiary||'—'}</div>
+        <div class="policy-key">AI assistant</div>
+        <div class="policy-val">${l.assistant||'—'}</div>
+        <div class="policy-key">Type</div>
+        <div class="policy-val">${l.type||'—'}</div>
+        <div class="policy-key">Credit</div>
+        <div class="policy-val">${l.creditRating||'—'}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('leads-container').innerHTML = `<div class="leads-list">${html}</div>`;
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLeads();
+}
+
+loadLeads();
+</script>
+</body>
+</html>
